@@ -1,0 +1,34 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+  "typescript.tsdk": ".yarn/sdks/typescript/lib",
+  "typescript.tsserver.watchOptions": {
+    "watchFile": "useFsEventsOnParentDirectory",
+    "watchDirectory": "useFsEvents"
+  },
+  "eslint.nodePath": ".yarn/sdks",
+  "eslint.enable": false,
+  "editor.formatOnSave": true,
+  "eslint.options": {
+    "extensions": [
+      ".ts",
+      ".js"
+    ]
+  },
+  "eslint.validate": [
+    "javascript",
+    "typescript"
+  ],
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "editor.tabSize": 2,
+  "files.exclude": {
+    "**/.idea": false,
+    "**/coverage": true
+  },
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "search.exclude": {
+    "**/.yarn": true,
+    "**/.pnp.*": true
+  }
+}

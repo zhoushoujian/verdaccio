@@ -1,0 +1,25 @@
+storage: ./storage_default_storage
+web:
+  title: Verdaccio
+  rateLimit:
+    windowMs: 5000000
+    max: 100000
+uplinks:
+  npmjs:
+    url: http://localhost:4873/
+packages:
+  '@*/*':
+    access: $all
+    publish: $all
+    proxy: npmjs
+    unpublish: npmjs
+  'forbidden-place':
+    access: nobody
+    publish: $all
+  '*':
+    access: $all
+    publish: $all
+    unpublish: xxx
+    proxy: npmjs
+logs:
+  - { type: stdout, format: pretty, level: trace }

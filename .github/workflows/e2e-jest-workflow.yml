@@ -1,0 +1,240 @@
+on:
+  schedule:
+    - cron: '0 3 * * 5'
+  pull_request:
+    branches:
+      - '**'
+
+name: 'E2E Jest with verdaccio'
+jobs:
+  yarn:
+    name: 'yarn:jest example'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3.0.2
+
+      - name: 'Use Node.js 12.x'
+        uses: actions/setup-node@1f8c6b94b26d0feae1e387ca63ccbdc44d27b561 # tag=v2.5.1
+        with:
+          node-version: 12.x
+      - name: Install Dependencies
+        run: yarn install
+      - name: 'Run verdaccio in the background'
+        run: |
+          nohup yarn node ./scripts/run-verdaccio.js --config ./scripts/e2e-config.yaml &
+      - name: 'Ping to verdaccio'
+        run: |
+          npm ping --registry http://localhost:4873
+      - name: 'Running the integration test'
+        run: |
+          source scripts/e2e-setup-ci.sh
+          yarn init --yes
+          yarn add jest@26.0.0 --registry http://localhost:4873
+
+          echo "it('should pass', () => { expect(true).toBeTruthy(); });" | tee pass.test.js
+          yarn jest pass.test.js
+
+          yarn add left-pad --registry http://localhost:4873 --verbose
+          echo "const leftPad = require('left-pad'); it('should resolve a module', () => { expect(typeof leftPad).toBe('function');});" | tee module.test.js
+          yarn jest module.test.js
+  yarn2:
+    name: 'yarn2:jest example'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3.0.2
+
+      - name: 'Use Node.js 12.x'
+        uses: actions/setup-node@1f8c6b94b26d0feae1e387ca63ccbdc44d27b561 # tag=v2.5.1
+        with:
+          node-version: 12.x
+      - name: Install Dependencies
+        run: yarn install
+      - name: 'Run verdaccio in the background'
+        run: |
+          nohup yarn node ./scripts/run-verdaccio.js --config ./scripts/e2e-config.yaml &
+      - name: 'Ping to verdaccio'
+        run: |
+          npm ping --registry http://localhost:4873
+      - name: 'Running the integration test'
+        run: |
+          source scripts/e2e-setup-ci.sh
+          yarn init --yes
+          yarn set version berry
+          yarn config set npmRegistryServer "http://localhost:4873"
+          yarn config set unsafeHttpWhitelist --json '["localhost"]'
+          yarn add jest@26.0.0
+
+          echo "it('should pass', () => { expect(true).toBeTruthy(); });" | tee pass.test.js
+          yarn jest pass.test.js
+
+          yarn add left-pad
+          echo "const leftPad = require('left-pad'); it('should resolve a module', () => { expect(typeof leftPad).toBe('function');});" | tee module.test.js
+          yarn jest module.test.js
+  npm:
+    name: 'npm:jest example'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3.0.2
+
+      - name: 'Use Node.js 12.x'
+        uses: actions/setup-node@1f8c6b94b26d0feae1e387ca63ccbdc44d27b561 # tag=v2.5.1
+        with:
+          node-version: 12.x
+      - name: 'install latest npm'
+        run: npm i -g npm@latest-6
+      - name: Install Dependencies
+        run: yarn install
+      - name: 'Run verdaccio in the background'
+        run: |
+          nohup yarn node ./scripts/run-verdaccio.js  --config ./scripts/e2e-config.yaml  &
+      - name: 'Ping to verdaccio'
+        run: |
+          npm ping --registry http://localhost:4873
+      - name: 'Running the integration test'
+        run: |
+          source scripts/e2e-setup-ci.sh
+          npm init --force
+          npm install jest@26.0.0 --registry http://localhost:4873
+
+          echo "it('should pass', () => { expect(true).toBeTruthy(); });" | tee pass.test.js
+          yarn jest pass.test.js
+
+          yarn add left-pad --registry http://localhost:4873 --verbose
+          echo "const leftPad = require('left-pad'); it('should resolve a module', () => { expect(typeof leftPad).toBe('function');});" | tee module.test.js
+          yarn jest module.test.js
+  npm8:
+    name: 'npm8:jest example'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3.0.2
+
+      - name: 'Use Node.js 12.x'
+        uses: actions/setup-node@1f8c6b94b26d0feae1e387ca63ccbdc44d27b561 # tag=v2.5.1
+        with:
+          node-version: 12.x
+      - name: 'install latest npm'
+        run: npm i -g npm@next-8
+      - name: Install Dependencies
+        run: yarn install
+      - name: 'Run verdaccio in the background'
+        run: |
+          nohup yarn node ./scripts/run-verdaccio.js  --config ./scripts/e2e-config.yaml  &
+      - name: 'Ping to verdaccio'
+        run: |
+          npm ping --registry http://localhost:4873
+      - name: 'Running the integration test'
+        run: |
+          source scripts/e2e-setup-ci.sh
+          npm init --force
+          npm install jest@26.0.0 --registry http://localhost:4873
+
+          echo "it('should pass', () => { expect(true).toBeTruthy(); });" | tee pass.test.js
+          yarn jest pass.test.js
+
+          yarn add left-pad --registry http://localhost:4873 --verbose
+          echo "const leftPad = require('left-pad'); it('should resolve a module', () => { expect(typeof leftPad).toBe('function');});" | tee module.test.js
+          yarn jest module.test.js
+  npm9:
+    name: 'npm9:jest example'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3.0.2
+
+      - name: 'Use Node.js 18.x'
+        uses: actions/setup-node@1f8c6b94b26d0feae1e387ca63ccbdc44d27b561 # tag=v2.5.1
+        with:
+          node-version: 18.x
+      - name: 'install latest npm'
+        run: npm i -g npm@next-9
+      - name: Install Dependencies
+        run: yarn install
+      - name: 'Run verdaccio in the background'
+        run: |
+          nohup yarn node ./scripts/run-verdaccio.js  --config ./scripts/e2e-config.yaml  &
+      - name: 'Ping to verdaccio'
+        run: |
+          npm ping --registry http://localhost:4873
+      - name: 'Running the integration test'
+        run: |
+          source scripts/e2e-setup-ci.sh
+          npm init --force
+          npm install jest@29.4.2 --registry http://localhost:4873
+
+          echo "it('should pass', () => { expect(true).toBeTruthy(); });" | tee pass.test.js
+          yarn jest pass.test.js
+
+          yarn add left-pad --registry http://localhost:4873 --verbose
+          echo "const leftPad = require('left-pad'); it('should resolve a module', () => { expect(typeof leftPad).toBe('function');});" | tee module.test.js
+          yarn jest module.test.js          
+
+  pnpm6:
+    name: 'pnpm:latest-6:jest example'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3.0.2
+
+      - name: 'Use Node.js 12.x'
+        uses: actions/setup-node@1f8c6b94b26d0feae1e387ca63ccbdc44d27b561 # tag=v2.5.1
+        with:
+          node-version: 12.x
+      - name: 'install latest pnpm'
+        run: npm i -g pnpm@latest-6
+      - name: Install Dependencies
+        run: yarn install
+      - name: 'Run verdaccio in the background'
+        run: |
+          nohup yarn node ./scripts/run-verdaccio.js &
+      - name: 'Ping to verdaccio'
+        run: |
+          pnpm ping --registry http://localhost:4873
+      - name: 'Running the integration test'
+        run: |
+          source scripts/e2e-setup-ci.sh
+          pnpm init --force
+          pnpm install jest@26.0.0 --registry http://localhost:4873
+
+          echo "it('should pass', () => { expect(true).toBeTruthy(); });" | tee pass.test.js
+          yarn jest pass.test.js
+
+          yarn add left-pad --registry http://localhost:4873 --verbose
+          echo "const leftPad = require('left-pad'); it('should resolve a module', () => { expect(typeof leftPad).toBe('function');});" | tee module.test.js
+          yarn jest module.test.js
+  pnpm7:
+    name: 'pnpm:next-7:jest example'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3.0.2
+
+      - name: 'Use Node.js 12.x'
+        uses: actions/setup-node@1f8c6b94b26d0feae1e387ca63ccbdc44d27b561 # tag=v2.5.1
+        with:
+          node-version: 16.x
+      - name: 'install latest pnpm'
+        run: npm i -g pnpm@next-7
+      - name: Install Dependencies
+        run: yarn install
+      - name: 'Run verdaccio in the background'
+        run: |
+          nohup yarn node ./scripts/run-verdaccio.js &
+      - name: 'Ping to verdaccio'
+        run: |
+          pnpm ping --registry http://localhost:4873
+      - name: 'Running the integration test'
+        run: |
+          source scripts/e2e-setup-ci.sh
+          pnpm init
+          pnpm install jest@26.0.0 --registry http://localhost:4873
+
+          echo "it('should pass', () => { expect(true).toBeTruthy(); });" | tee pass.test.js
+          yarn jest pass.test.js
+
+          yarn add left-pad --registry http://localhost:4873 --verbose
+          echo "const leftPad = require('left-pad'); it('should resolve a module', () => { expect(typeof leftPad).toBe('function');});" | tee module.test.js
+          yarn jest module.test.js
