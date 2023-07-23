@@ -2,6 +2,7 @@ import buildDebug from 'debug';
 import { Router } from 'express';
 import _ from 'lodash';
 import mime from 'mime';
+import fs from 'fs';
 import Path from 'path';
 
 import { validatioUtils } from '@verdaccio/core';
@@ -145,7 +146,44 @@ export function publishPackage(storage: IStorageHandler, config: Config, auth: I
   const starApi = star(storage);
   return function (req: $RequestExtend, res: $ResponseExtend, next: $NextFunctionVer): void {
     const packageName = req.params.package;
-    debug('publishing or updating a new version for %o', packageName);
+    req.logger.info('publishing or updating a new version for %o', packageName);
+    //校验包名规范
+    if (!['@shuyun-ep-team/', '@kui/', 'core-'].some(item => packageName?.startsWith(item))) {
+      req.logger.warn('包名不符合规范，包名必须以@shuyun-ep-team/开头, packageName', packageName)
+      return next(ErrorCode.getBadData('包名不符合规范，包名必须以@shuyun-ep-team/开头'));
+    }
+    //校验cli别名规范
+    try {
+      const tagVersion = req.body['dist-tags'].latest;
+      const binInfo = req.body.versions[tagVersion].bin;
+      if (binInfo && typeof binInfo === 'object') {
+        const cliName = Object.keys(binInfo)[0];
+        const suffixName = packageName.replace('@shuyun-ep-team/', '').replace('@kui/', '');
+        const valid = cliName === suffixName;
+        const dbJsonPath =  Path.join(Path.dirname(config.self_path), config.storage as 'string', '.verdaccio-db.json');
+        req.logger.info('publishPackage dbJsonPath', dbJsonPath);
+        if (fs.existsSync(dbJsonPath)) {
+          try {
+            const content = JSON.parse(String(fs.readFileSync(dbJsonPath)));
+            const { list } = content || { list: [] };
+            if (!list.some(item => item === packageName) && !valid) {
+              req.logger.warn('cli别名必须使用@shuyun-ep-team/后面的名称, packageName', packageName, 'cliName', cliName)
+              return next(ErrorCode.getBadData('cli别名必须使用@shuyun-ep-team/后面的名称'));
+            }
+          } catch (err) {
+            req.logger.error('publishPackage read dbJsonPath fail, err', dbJsonPath, err);
+            return next(ErrorCode.getBadData('解析列表数据失败失败，请联系管理员'));
+          }
+        } else {
+          req.logger.error('publishPackage read dbJsonPath fail', dbJsonPath);
+          return next(ErrorCode.getBadData('数据库读取失败，请联系管理员'));
+        }
+      }
+    } catch (err) {
+      req.logger.error('publishPackage 校验cli别名规范 err', err);
+      return next(ErrorCode.getBadData('包信息解析失败，请联系管理员'));
+    }
+
     /**
      * Write tarball of stream data from package clients.
      */
@@ -207,7 +245,7 @@ export function publishPackage(storage: IStorageHandler, config: Config, auth: I
       if (isInvalidBodyFormat) {
         // npm is doing something strange again
         // if this happens in normal circumstances, report it as a bug
-        logger.info({ packageName }, `wrong package format on publish a package @{packageName}`);
+        req.logger.info({ packageName }, `wrong package format on publish a package @{packageName}`);
         return next(ErrorCode.getBadRequest(API_ERROR.UNSUPORTED_REGISTRY_CALL));
       }
 
@@ -245,6 +283,7 @@ export function publishPackage(storage: IStorageHandler, config: Config, auth: I
               }
 
               try {
+                req.logger.info('start notify members')
                 await notify(
                   metadataCopy,
                   config,
@@ -252,7 +291,7 @@ export function publishPackage(storage: IStorageHandler, config: Config, auth: I
                   `${metadataCopy.name}@${versionToPublish}`
                 );
               } catch (error) {
-                logger.error({ error }, 'notify batch service has failed: @{error}');
+                req.logger.error({ error }, 'notify batch service has failed: @{error}');
               }
 
               res.status(HTTP_STATUS.CREATED);
@@ -274,12 +313,12 @@ export function publishPackage(storage: IStorageHandler, config: Config, auth: I
         req.params._rev ||
         (isRelatedToDeprecation(req.body) && _.isEmpty(req.body._attachments))
       ) {
-        debug('updating a new version for %o', packageName);
+        req.logger.info('updating a new version for %o', packageName);
         // we check unpublish permissions, an update is basically remove versions
         const remote = req.remote_user;
         auth.allow_unpublish({ packageName }, remote, (error) => {
           if (error) {
-            logger.error({ packageName }, `not allowed to unpublish a version for @{packageName}`);
+            req.logger.error({ packageName }, `not allowed to unpublish a version for @{packageName}`);
             return next(error);
           }
           storage.changePackage(packageName, metadata, req.params.revision, function (error) {
@@ -287,13 +326,13 @@ export function publishPackage(storage: IStorageHandler, config: Config, auth: I
           });
         });
       } else {
-        debug('adding a new version for %o', packageName);
+        req.logger.info('adding a new version for %o', packageName);
         storage.addPackage(packageName, metadata, function (error) {
           afterChange(error, API_MESSAGE.PKG_CREATED, metadata);
         });
       }
     } catch (error) {
-      logger.error({ packageName }, 'error on publish, bad package data for @{packageName}');
+      req.logger.error({ packageName }, 'error on publish, bad package data for @{packageName}');
       return next(ErrorCode.getBadData(API_ERROR.BAD_PACKAGE_DATA));
     }
   };

@@ -100,7 +100,7 @@ export interface Profile {
   fullname: string;
 }
 
-export type $RequestExtend = Request & { remote_user?: any; log: Logger };
+export type $RequestExtend = Request & { remote_user?: any; log: Logger; logger?: any };
 export type $ResponseExtend = Response & { cookies?: any };
 export type $NextFunctionVer = NextFunction & any;
 export type $SidebarPackage = Package & { latest: any };

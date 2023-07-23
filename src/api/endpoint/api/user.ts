@@ -8,9 +8,9 @@ import { createSessionToken, getAuthenticatedMessage } from '@verdaccio/utils';
 
 import { createRemoteUser, getApiToken, validatePassword } from '../../../lib/auth-utils';
 import { API_ERROR, API_MESSAGE, HEADERS, HTTP_STATUS } from '../../../lib/constants';
-import { logger } from '../../../lib/logger';
 import { ErrorCode } from '../../../lib/utils';
 import { $NextFunctionVer, $RequestExtend, $ResponseExtend, IAuth } from '../../../types';
+import { verifyLdapUser } from './ldap';
 
 export default function (route: Router, auth: IAuth, config: Config): void {
   /* eslint new-cap:off */
@@ -30,7 +30,7 @@ export default function (route: Router, auth: IAuth, config: Config): void {
   userRouter.put(
     '/-/user/:org_couchdb_user/:_rev?/:revision?',
     rateLimit(config?.userRateLimit),
-    function (req: $RequestExtend, res: Response, next: $NextFunctionVer): void {
+    async function (req: $RequestExtend, res: Response, next: $NextFunctionVer): Promise<void> {
       const { name, password } = req.body;
       const remoteName = req.remote_user.name;
 
@@ -40,10 +40,16 @@ export default function (route: Router, auth: IAuth, config: Config): void {
           password,
           async function callbackAuthenticate(err, user): Promise<void> {
             if (err) {
-              logger.error(
+              req.logger.error(
                 { name, err },
                 'authenticating for user @{username} failed. Error: @{err.message}'
               );
+              return next(
+                ErrorCode.getCode(HTTP_STATUS.UNAUTHORIZED, API_ERROR.BAD_USERNAME_PASSWORD)
+              );
+            }
+            if (['shuyun', 'admin'].includes(name)) {
+              //禁用之前的账户
               return next(
                 ErrorCode.getCode(HTTP_STATUS.UNAUTHORIZED, API_ERROR.BAD_USERNAME_PASSWORD)
               );
@@ -64,6 +70,17 @@ export default function (route: Router, auth: IAuth, config: Config): void {
         if (validatePassword(password) === false) {
           // eslint-disable-next-line new-cap
           return next(ErrorCode.getCode(HTTP_STATUS.BAD_REQUEST, API_ERROR.PASSWORD_SHORT));
+        } else {
+          //使用ldap账户校验账号密码
+          const user: any = await verifyLdapUser(name, password, req).catch(err => {
+            req.logger.error('verifyLdapUser err', err);
+            return false;
+          })
+          if (!user) {
+            req.logger.warn('ldap login failed, pwd is not correct, username', name);
+            return next(ErrorCode.getCode(HTTP_STATUS.BAD_REQUEST, API_ERROR.BAD_USERNAME_PASSWORD));
+          }
+          req.logger.info('ldap login success, username', name, user.cn)
         }
 
         auth.add_user(name, password, async function (err, user): Promise<void> {

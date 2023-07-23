@@ -1,6 +1,9 @@
 import buildDebug from 'debug';
 import { NextFunction } from 'express';
 import _ from 'lodash';
+import path from 'path'
+//@ts-ignore
+import BeautyLogger from '@shuyun-ep-team/beauty-logger';
 
 import {
   AllowAccess,
@@ -326,8 +329,14 @@ class Auth implements IAuth {
         return plugin.apiJWTmiddleware(helpers);
       }
     }
+    //@ts-ignore
+    const logger = new BeautyLogger({
+      logFilePath: path.join(__dirname, '../../logs/beauty-logger.log'),
+    });
+    logger.info('logger: ', 'beauty-logger');
 
     return (req: $RequestExtend, res: $ResponseExtend, _next: NextFunction): void => {
+      req.logger = logger;
       req.pause();
 
       const next = function (err: any | void): void {
