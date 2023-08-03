@@ -7,7 +7,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:import/typescript',
     'plugin:prettier/recommended',
-    '@shuyun-ep-team/eslint-config'
+    // '@shuyun-ep-team/eslint-config'
   ],
   plugins: ['import', 'jest', 'prettier'],
   env: {

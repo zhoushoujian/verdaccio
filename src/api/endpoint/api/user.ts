@@ -49,7 +49,7 @@ export default function (route: Router, auth: IAuth, config: Config): void {
               );
             }
             if (['shuyun', 'admin'].includes(name)) {
-              //禁用之前的账户
+              // 禁用之前的账户
               return next(
                 ErrorCode.getCode(HTTP_STATUS.UNAUTHORIZED, API_ERROR.BAD_USERNAME_PASSWORD)
               );
@@ -71,16 +71,18 @@ export default function (route: Router, auth: IAuth, config: Config): void {
           // eslint-disable-next-line new-cap
           return next(ErrorCode.getCode(HTTP_STATUS.BAD_REQUEST, API_ERROR.PASSWORD_SHORT));
         } else {
-          //使用ldap账户校验账号密码
-          const user: any = await verifyLdapUser(name, password, req).catch(err => {
+          // 使用ldap账户校验账号密码
+          const user: any = await verifyLdapUser(name, password, req).catch((err) => {
             req.logger.error('verifyLdapUser err', err);
             return false;
-          })
+          });
           if (!user) {
             req.logger.warn('ldap login failed, pwd is not correct, username', name);
-            return next(ErrorCode.getCode(HTTP_STATUS.BAD_REQUEST, API_ERROR.BAD_USERNAME_PASSWORD));
+            return next(
+              ErrorCode.getCode(HTTP_STATUS.BAD_REQUEST, API_ERROR.BAD_USERNAME_PASSWORD)
+            );
           }
-          req.logger.info('ldap login success, username', name, user.cn)
+          req.logger.info('ldap login success, username', name, user.cn);
         }
 
         auth.add_user(name, password, async function (err, user): Promise<void> {

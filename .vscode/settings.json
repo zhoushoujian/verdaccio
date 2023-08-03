@@ -6,7 +6,7 @@
     "watchDirectory": "useFsEvents"
   },
   "eslint.nodePath": ".yarn/sdks",
-  "eslint.enable": false,
+  "eslint.enable": true,
   "editor.formatOnSave": true,
   "eslint.options": {
     "extensions": [

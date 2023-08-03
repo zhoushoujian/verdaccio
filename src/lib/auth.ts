@@ -1,9 +1,9 @@
+// @ts-ignore
+import BeautyLogger from '@shuyun-ep-team/beauty-logger';
 import buildDebug from 'debug';
 import { NextFunction } from 'express';
 import _ from 'lodash';
-import path from 'path'
-//@ts-ignore
-import BeautyLogger from '@shuyun-ep-team/beauty-logger';
+import path from 'path';
 
 import {
   AllowAccess,
@@ -329,7 +329,7 @@ class Auth implements IAuth {
         return plugin.apiJWTmiddleware(helpers);
       }
     }
-    //@ts-ignore
+    // @ts-ignore
     const logger = new BeautyLogger({
       logFilePath: path.join(__dirname, '../../logs/beauty-logger.log'),
     });
